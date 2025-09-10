@@ -25,7 +25,7 @@ jobs:
       - name: Test /status Endpoint
         run: |
           docker run -d --name test_app -p 5000:5000 python-devops-app
-          sleep 5
+          sleep 10
           curl -f http://localhost:5000/status
           docker stop test_app
 
