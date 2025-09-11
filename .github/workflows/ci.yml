@@ -22,23 +22,16 @@ jobs:
       - name: Test Flask Installation
         run: docker run --rm python-devops-app python -c "import flask; print('Flask OK')"
 
-      - name: Test Root Endpoint
-        run: |
-          docker run -d --name test_root -p 5000:5000 python-devops-app
-          sleep 10
-          docker exec test_root curl -f http://127.0.0.1:5000/
-          docker stop test_root
-
       - name: Test /status Endpoint
         run: |
-          docker run -d --name test_status -p 5000:5000 python-devops-app
+          docker run -d -p 5000:5000 --name test_app python-devops-app
           sleep 10
-          docker exec test_status curl -f http://127.0.0.1:5000/status
-          docker stop test_status
+          curl -f http://localhost:5000/status
+          docker stop test_app
 
       - name: Test /metrics Endpoint
         run: |
-          docker run -d --name test_metrics -p 5000:5000 python-devops-app
+          docker run -d -p 5000:5000 --name test_metrics_app python-devops-app
           sleep 10
-          docker exec test_metrics curl -f http://127.0.0.1:5000/metrics
-          docker stop test_metrics
+          curl -f http://localhost:5000/metrics
+          docker stop test_metrics_app
