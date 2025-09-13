@@ -11,6 +11,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v2
@@ -23,24 +24,60 @@ jobs:
 
       - name: Test /status Endpoint
         run: |
-          docker run -d -p 5000:5000 --name test_app python-devops-app
+          # Start container
+          docker run -d -p 5000:5000 --name test_status_app python-devops-app
 
-          until curl -sf http://localhost:5000/status; do
-            echo "Waiting for /status..."
+          # Wait until container is running
+          while [ "$(docker inspect -f '{{.State.Running}}' test_status_app)" != "true" ]; do
+            echo "Waiting for container test_status_app to start..."
             sleep 1
           done
 
+          # Wait for /status endpoint to respond (max 20s)
+          timeout=20
+          count=0
+          until curl -sf http://localhost:5000/status; do
+            echo "Waiting for /status endpoint..."
+            sleep 1
+            count=$((count+1))
+            if [ $count -ge $timeout ]; then
+              echo "Timeout waiting for /status"
+              docker logs test_status_app
+              docker stop test_status_app
+              docker rm test_status_app
+              exit 1
+            fi
+          done
+
           echo "/status is ready!"
-          docker stop test_app
-          docker rm test_app
+          docker stop test_status_app
+          docker rm test_status_app
 
       - name: Test /metrics Endpoint
         run: |
+          # Start container
           docker run -d -p 5001:5000 --name test_metrics_app python-devops-app
 
-          until curl -sf http://localhost:5000/metrics; do
-            echo "Waiting for /metrics..."
+          # Wait until container is running
+          while [ "$(docker inspect -f '{{.State.Running}}' test_metrics_app)" != "true" ]; do
+            echo "Waiting for container test_metrics_app to start..."
             sleep 1
+          done
+
+          # Wait for /metrics endpoint to respond (max 20s)
+          timeout=20
+          count=0
+          until curl -sf http://localhost:5001/metrics; do
+            echo "Waiting for /metrics endpoint..."
+            sleep 1
+            count=$((count+1))
+            if [ $count -ge $timeout ]; then
+              echo "Timeout waiting for /metrics"
+              docker logs test_metrics_app
+              docker stop test_metrics_app
+              docker rm test_metrics_app
+              exit 1
+            fi
           done
 
           echo "/metrics is ready!"
