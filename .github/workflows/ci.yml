@@ -11,7 +11,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v2
@@ -25,13 +24,25 @@ jobs:
       - name: Test /status Endpoint
         run: |
           docker run -d -p 5000:5000 --name test_app python-devops-app
-          sleep 10
-          curl -f http://localhost:5000/status
+
+          until curl -sf http://localhost:5000/status; do
+            echo "Waiting for /status..."
+            sleep 1
+          done
+
+          echo "/status is ready!"
           docker stop test_app
+          docker rm test_app
 
       - name: Test /metrics Endpoint
         run: |
-          docker run -d -p 5000:5000 --name test_metrics_app python-devops-app
-          sleep 10
-          curl -f http://localhost:5000/metrics
+          docker run -d -p 5001:5000 --name test_metrics_app python-devops-app
+
+          until curl -sf http://localhost:5000/metrics; do
+            echo "Waiting for /metrics..."
+            sleep 1
+          done
+
+          echo "/metrics is ready!"
           docker stop test_metrics_app
+          docker rm test_metrics_app
